@@ -1,0 +1,63 @@
+{
+  "p": [
+    {
+      "ptype": "p",
+      "title": "Rand",
+      "isEnabled": true,
+      "wtype": 0,
+      "code0": {
+        "asm": "  mov bx, 0x100\n  mov ax, 1\n  mov cx, 65063\nrandnext:\n  mul cx\n  add ax, 1\n  rol ax, 1\n  mov dx, ax\n  and dx, 0x0101\n  mov [bx], dx  \n  add bx, 2\n  jnz randnext\n  db 0xcc",
+        "addr_rand": false,
+        "addr": "0000"
+      }
+    },
+    {
+      "ptype": "p",
+      "title": "Colorer1",
+      "isEnabled": true,
+      "wtype": 2,
+      "code0": {
+        "asm": "  mov bx, 0x100\nstep:  \n  mov al, [bx]\n  mov ah, al\n  and al, 0x82 ; com from NextStep1 ?\n  cmp al, 0x80 ; did it set 0 ?\n  je write\n  mov al, ah   ; restore orig value for 2nd check\n  and al, 0x71 ; com from NextStep2 ?\n  cmp al, 0x70 ; did it set 0 ?\n  je write\n  jmp next\nwrite:  \n  mov byte[bx], ah  ; don't change value\nnext: \n  inc bx\n  jnz step\n  add bx, 0x100-1\n  jmp step",
+        "addr_rand": false,
+        "addr": "0025"
+      },
+      "code1": {
+        "asm": "  mov bx, 0x100\nstep:  \n  mov al, [bx]\n  mov ah, al\n  and al, 0x82 ; com from NextStep1 ?\n  cmp al, 0x82 ; did it set 1 ?\n  je write\n  mov al, ah   ; restore orig value for 2nd check  \n  and al, 0x71 ; com from NextStep2 ?\n  cmp al, 0x71 ; did it set 1 ?\n  je write\n  jmp next\nwrite:  \n  mov byte[bx], ah  ; don't change value\nnext: \n  inc bx\n  jnz step\n  add bx, 0x100-1\n  jmp step",
+        "addr_rand": false,
+        "addr": "0047"
+      }
+    },
+    {
+      "ptype": "p",
+      "title": "NextStep",
+      "isEnabled": true,
+      "wtype": 2,
+      "code0": {
+        "asm": "  mov si, 0x100  ; si: cell to check\n  mov cx, 0x0201 ; cl: what to test\n                 ; ch: what to put\n  mov dx, 0x8000 ; dh: colorer communicate                 \nnext_pix:\n  inc si\n  jnz start_visit\n  add si, 0x100-1   ; skip code section\n\n; visit neighbors of [si]\nstart_visit:  \n  mov bx, 8*2  ; visit index into visit_offsets\n  mov al, 0    ; counts neighbors\nvisit_loop:\n  mov di, si   ; di: address of neighbor\n  add di, word[0x70 -2 + visit_offsets + bx]\n  mov dl, byte[di]\n  and dl, cl    ; test neighbor alive\n  je no_inc\n  inc al\nno_inc:  \n  sub bx, 2    ; advance visit_offsets loop\n  jnz visit_loop\n  mov ah, [si] ; ah: value read from current cell,\n               ;     and value written to cell\n  and ah, cl   ; status of current gen?\n  jz dead\n  \nalive:\n  cmp al, 2    ; need to stay alive?\n  je stay_alive\n  cmp al, 3 \n  je stay_alive \ndie:  \n  ; dead next gen, set it to the and-ed value \n  jmp write\nstay_alive:\n  or ah, ch ; alive next gen\n  jmp write\n   \ndead:\n  cmp al, 3   ; need to be born?\n  je be_born\nstay_dead:\n  ; dead next gen, set to and-ed value\n  jmp write\nbe_born:  \n  or ah, ch  ; alive next gen\n  \nwrite:  \n  or ah, dh  ; mark as written for colorer  \n  mov [si], ah \n  jmp next_pix   \n  \nvisit_offsets dw 1, -1\n    dw 0x100, -0x100\n    dw 0x101, 0xff\n    dw -0x101, -0xff",
+        "addr_rand": false,
+        "addr": "0070"
+      },
+      "code1": {
+        "asm": "  mov si, 0x8000  ; si: cell to check\n  mov cx, 0x0102 ; cl: what to test\n                 ; ch: what to put\n  mov dx, 0x7000 ; dh: colorer communicate \n  \n  mov ax, 0x79\n  jmp ax\n",
+        "addr_rand": false,
+        "addr": "00d0"
+      }
+    },
+    {
+      "ptype": "p",
+      "title": "Glider",
+      "isEnabled": false,
+      "wtype": 0,
+      "code0": {
+        "asm": "  mov al, 1\n  mov bx, 0\nnext:\n  mov [0x613+bx],al\n  mov [0x614+bx],al\n  mov [0x615+bx],al\n  mov [0x515+bx],al\n  mov [0x414+bx],al\n  add bx, 234\n  cmp bx, 0x7f00\n  jl next\n",
+        "addr_rand": false,
+        "addr": "0000"
+      }
+    }
+  ],
+  "sel": {
+    "label": "pB",
+    "idx": 0
+  },
+  "z_enabled": true
+}
